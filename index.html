@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=800">
+		<script src="/scripts/standard.js" type="text/javascript" charset="utf-8"></script>
+		<script src="/scripts/crdt.js" type="text/javascript" charset="utf-8"></script>
+		<script src="https://ajaxorg.github.io/ace-builds/src-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
+		<script src="editor.js" type="text/javascript" charset="utf-8"></script>
+		<style type="text/css" media="screen" id="pagestyles">
+			* {
+				box-sizing: border-box;
+			}
+
+
+			html, body {
+				overflow: hidden;
+				margin: 0px;
+				padding: 0px;
+			}
+
+			#flexarea {
+				margin: 0px;
+				padding: 0px;
+				display: flex;
+				flex-direction: column;
+				position: absolute;
+				top: 0px;
+				bottom: 0px;
+				left: 0px;
+				right: 0px;
+			}
+
+			#menubar {
+				display: flex;
+				flex-direction: row;
+				margin: 0;
+				padding: 0px 0px 0px 40px;
+				background-color: rgb(63, 63, 63);
+				color: white;
+				border-bottom-style: solid;
+				border-bottom-width: 1px;
+				white-space: nowrap;
+			}
+
+			#menubar:last-child {
+				flex-grow: 1;
+				flex-shrink: 0;
+			}
+
+			.menuitem {
+				margin: 0px 10px 0px 0px;
+				display: inline-block;
+				position: relative;
+				overflow: visible;
+				z-index: 50;
+				background-color: inherit;
+				color: inherit;
+				cursor: default;
+				user-select: none;
+				white-space: nowrap;
+			}
+
+			.menuitem .hiddenmenu {
+				display: none;
+				position: absolute;
+				width: auto;
+				z-index: 50;
+				background-color: inherit;
+				color: inherit;
+			}
+
+			.menuitem:hover .hiddenmenu {
+				display: block;
+				border: 1px solid white;
+			}
+	
+			.menuitem span {
+				margin: 0px;
+				padding: 0px 5px;
+				display: inline-block;
+				white-space: nowrap;
+				font: 18px sans-serif;
+				word-spacing: initial;
+				background-color: inherit;
+			}
+
+			.menuitem:hover .rootmenu {
+				filter: invert(20%);
+			}
+			
+			.menuitem span:hover,.menuitem:hover .rootmenu:hover {
+				filter: invert(20%);
+			}
+
+			#editor {
+				margin: 0;
+				flex-grow: 1;
+				flex-shrink: 0;
+			}
+
+			#chatbox {
+				margin: 0px;
+				padding: 0px;
+				position: absolute;
+				min-height: 5px;
+				width: 33.3%;
+				bottom: 0px;
+				right: 0px;
+				background-color: transparent;
+				z-index: 60;
+				color: white;
+			}
+
+			#chatmsg {
+				margin: 0px;
+				padding: 0px;
+				width: 100%;
+				font-size: 18px;
+				border-width: 0px;
+				border-style: solid;
+				background-color: inherit;
+				color: inherit;
+			}
+
+			#chatmsg:focus {
+				outline-style: none;
+			}
+
+			#chatbox span {
+				margin: 5px 5px 5px auto;
+				padding: 5px;
+				font-size: 18px;
+				border-width: 1px;
+				border-style: solid;
+				border-radius: 8px;
+				display: table;
+				background-color: black;
+				transition: opacity 1s;
+				opacity: 1;
+			}
+
+			.selected {
+			}
+
+			</style>
+		<title>Nishi's SyncPad (Alpha)</title>
+	</head>
+	<body>
+		<div id="flexarea">
+			<div id="menubar" tabindex="-1">
+				<div class="menuitem" tabindex="-1">
+					<span class="rootmenu selected" tabindex="-1">File</span>
+					<div id="filemenu" class="hiddenmenu" tabindex="-1">
+						<span id="Open">Open...</span><br />
+						<span id="Save">Save As...</span><br />
+						<span id="Eval">Eval</span><br />
+						<span onclick="window.open(window.location.href,'','resizable'),false;" id="NewWindow">Pop Out<span>
+					</div>
+				</div>
+				<div class="menuitem" tabindex="-1">
+					<span class="rootmenu" tabindex="-1">Language</span>
+					<div id="modemenu" class="hiddenmenu" tabindex="-1"></div>
+				</div>
+				<div class="menuitem" tabindex="-1">
+					<span class="rootmenu" tabindex="-1">Theme</span>
+					<div id="thememenu" class="hiddenmenu" tabindex="-1"></div>
+				</div>
+				<div class="menuitem" tabindex="-1">
+					<span class="rootmenu" tabindex="-1" id="setnick">Set Nickname</span>
+				</div>
+				<input type="text" id="chatmsg" placeholder="Type a chat message here and press enter...">
+			</div>
+			<div id="editor"></div>
+		</div>
+		<div id="chatbox"></div>
+	</body>
+</html>
