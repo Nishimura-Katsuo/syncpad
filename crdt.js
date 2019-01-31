@@ -1,5 +1,8 @@
+"use strict";
 // Text CRDT implementation - light versioning, no join semilattice, no rewinds
 //	Each letter typed is a unique event, so only insert/remove operations need be supported
+
+/* global setTimeout */
 
 let nodeCompare = (a, b) => {
 	let i = 1;
@@ -146,11 +149,6 @@ textCRDT.prototype.generateNodes = function (text2) {
 
 	this.discardNodes(discardThese);
 
-	if (this.debugmode && this.value() !== text2) {
-		console.error("Values do not match!");
-		debugger;
-	}
-
 	return ret;
 };
 
@@ -243,8 +241,8 @@ textCRDT.prototype.mergeNodes = function (nodes) {
 	return this;
 };
 
-try {
+/* globals module */
+
+if (typeof module !== 'undefined') {
 	module.exports = textCRDT;
-} catch (e) {
-	// do nothing
 }

@@ -1,3 +1,4 @@
+"use strict";
 /* global ace textCRDT WebSocket cookies setTimeout URL Blob FileReader prompt setInterval */
 /* TODO:
  * 	magic cursors
@@ -140,6 +141,7 @@
 			let newchat = document.createElement('span');
 			newchat.innerText = msg;
 			newchat.timeStamp = Date.now();
+			newchat.style.whiteSpace = 'pre';
 
 			if (backgroundColor) {
 				newchat.style.backgroundColor = backgroundColor;
@@ -148,6 +150,10 @@
 			chatbox.appendChild(newchat);
 		}
 	}
+
+	console.log = (...args) => showMessage(args.map(v => v && v.length ? '[' + v.toString() + ']' : JSON.stringify(v, null, '  ')).join(' '), '#000080');
+	console.warn = (...args) => showMessage(args.map(v => v && v.length ? '[' + v.toString() + ']' : JSON.stringify(v, null, '  ')).join(' '), '#808000');
+	console.error = (...args) => showMessage(args.map(v => v && v.length ? '[' + v.toString() + ']' : JSON.stringify(v, null, '  ')).join(' '), '#800000');
 
 	function parse (data) {
 		if (!data || !data.data) {
@@ -233,8 +239,11 @@
 		}
 
 		try {
-			let ret = Function(editor.getValue() + ";return main();")();
-			showMessage(ret, "#008000");
+			let ret = Function(editor.getValue() + "; let __mainExists__ = false; try { __mainExists__ = Boolean(main); } catch (e) {} if(__mainExists__) return main();")();
+
+			if (ret !== undefined) {
+				showMessage(ret, "#008000");
+			}
 		} catch (err) {
 			showMessage(err, "#800000");
 		}
@@ -337,7 +346,7 @@
 			elem.language = k;
 			modemenu.appendChild(elem);
 
-			elem.addEventListener('click', e => {
+			elem.addEventListener('click', () => {
 				if (languages[currentMode]) {
 					languages[currentMode].element.style.filter = "";
 				}
@@ -374,7 +383,7 @@
 			elem.theme = k;
 			thememenu.appendChild(elem);
 
-			elem.addEventListener('click', e => {
+			elem.addEventListener('click', () => {
 				if (themes[cookies.theme]) {
 					themes[cookies.theme].element.style.filter = "";
 				}
@@ -393,7 +402,7 @@
 			cookies.theme = "idle_fingers";
 		}
 
-		editor.renderer.on('themeLoaded', e => {
+		editor.renderer.on('themeLoaded', () => {
 			let comp = window.getComputedStyle(editor.container);
 			menubar.style.backgroundColor = comp.backgroundColor;
 			menubar.style.color = comp.color;

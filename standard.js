@@ -1,12 +1,16 @@
+"use strict";
+
+/* global setTimeout */
+
 const cookie = {};
 const cookies = cookie;
 
 function saveCookies () {
 	const expireDate = "Thu, 18 Dec 2013 12:00:00 UTC";
 	const foreverDate = "Thu, 18 Dec 4013 12:00:00 UTC";
-	var ka = Object.keys(cookie);
+	let ka = Object.keys(cookie);
 
-	for (var i = 0;i < ka.length;i++) {
+	for (let i = 0; i < ka.length; i++) {
 		let ck = ka[i];
 		let cc = cookie[ck];
 
@@ -23,9 +27,9 @@ function saveCookies () {
 		return;
 	}
 
-	var ca = document.cookie.split(';');
+	let ca = document.cookie.split(';');
 
-	for (var i = 0;i < ca.length;i++) {
+	for (let i = 0; i < ca.length; i++) {
 		let ep = ca[i].indexOf("=");
 
 		if (ep > -1) {
@@ -77,4 +81,31 @@ function fastElement (eOpt) {
 	}
 
 	return new_obj;
+}
+
+let delay = timeOut => new Promise(resolve => setTimeout(resolve, timeOut));
+
+// my 'jQuerySuperExtraLite'
+
+let $ = typeof document !== 'undefined' ? document.getElementById.bind(document) : () => {
+	throw 'Document does not exist';
+};
+
+/* globals HTMLElement module*/
+
+if (typeof HTMLElement !== 'undefined') {
+	HTMLElement.prototype.forEachChild = function (cb, context = this) {
+		for (let c = 0, C = this.children.length; c < C; c++) {
+			this.children[c] && cb.call(context, this.children[c], c, this);
+		}
+	};
+}
+
+if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
+	Object.apply(module.exports, {
+		cookies: cookies,
+		fastElement: fastElement,
+		delay: delay,
+		$: $,
+	});
 }
