@@ -1,2 +1,2 @@
 # syncpad
-CRDT-based collaborative text editor (featuring the Ace editor)
+CRDT-based collaborative source code editor (featuring the Monaco editor)
