@@ -1,177 +1,86 @@
-<!DOCTYPE html>
 <html>
 	<head>
-		<meta name="viewport" content="width=800">
-		<script src="standard.js" type="text/javascript" charset="utf-8"></script>
-		<script src="crdt.js" type="text/javascript" charset="utf-8"></script>
-		<script src="https://ajaxorg.github.io/ace-builds/src-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
-		<script src="editor.js" type="text/javascript" charset="utf-8"></script>
-		<style type="text/css" media="screen" id="pagestyles">
-			* {
-				box-sizing: border-box;
-			}
-
-
-			html, body {
-				overflow: hidden;
-				margin: 0px;
-				padding: 0px;
-			}
-
-			#flexarea {
-				margin: 0px;
-				padding: 0px;
-				display: flex;
-				flex-direction: column;
-				position: absolute;
-				top: 0px;
-				bottom: 0px;
-				left: 0px;
-				right: 0px;
-			}
-
-			#menubar {
-				display: flex;
-				flex-direction: row;
-				margin: 0;
-				padding: 0px 0px 0px 40px;
-				background-color: rgb(63, 63, 63);
-				color: white;
-				border-bottom-style: solid;
-				border-bottom-width: 1px;
-				white-space: nowrap;
-			}
-
-			#menubar:last-child {
-				flex-grow: 1;
-				flex-shrink: 0;
-			}
-
-			.menuitem {
-				margin: 0px 10px 0px 0px;
-				display: inline-block;
-				position: relative;
-				overflow: visible;
-				z-index: 50;
-				background-color: inherit;
-				color: inherit;
-				cursor: default;
-				user-select: none;
-				white-space: nowrap;
-			}
-
-			.menuitem .hiddenmenu {
-				display: none;
-				position: absolute;
-				width: auto;
-				z-index: 50;
-				background-color: inherit;
-				color: inherit;
-			}
-
-			.menuitem:hover .hiddenmenu {
-				display: block;
-				border: 1px solid white;
-			}
-	
-			.menuitem span {
-				margin: 0px;
-				padding: 0px 5px;
-				display: inline-block;
-				white-space: nowrap;
-				font: 18px sans-serif;
-				word-spacing: initial;
-				background-color: inherit;
-			}
-
-			.menuitem:hover .rootmenu {
-				filter: invert(20%);
-			}
-			
-			.menuitem span:hover,.menuitem:hover .rootmenu:hover {
-				filter: invert(20%);
-			}
-
-			#editor {
-				margin: 0;
-				flex-grow: 1;
-				flex-shrink: 0;
-			}
-
-			#chatbox {
-				margin: 0px;
-				padding: 0px;
-				position: absolute;
-				min-height: 5px;
-				width: 33.3%;
-				bottom: 0px;
-				right: 0px;
-				background-color: transparent;
-				z-index: 60;
-				color: white;
-			}
-
-			#chatmsg {
-				margin: 0px;
-				padding: 0px;
-				width: 100%;
-				font-size: 18px;
-				border-width: 0px;
-				border-style: solid;
-				background-color: inherit;
-				color: inherit;
-			}
-
-			#chatmsg:focus {
-				outline-style: none;
-			}
-
-			#chatbox span {
-				margin: 5px 5px 5px auto;
-				padding: 5px;
-				font-size: 18px;
-				border-width: 1px;
-				border-style: solid;
-				border-radius: 8px;
-				display: table;
-				background-color: black;
-				transition: opacity 1s;
-				opacity: 1;
-			}
-
-			.selected {
-			}
-
-			</style>
-		<title>Nishi's SyncPad (Alpha)</title>
+		<title>Nishi's Syncpad (alpha)</title>
+		<link rel="stylesheet" href="Inconsolata.css">
+		<link rel="stylesheet" data-name="vs/editor/editor.main" href="./node_modules/monaco-editor/min/vs/editor/editor.main.css">
+		<link rel="stylesheet" href="v2.css">
+		<script>
+			var require = { paths: { 'vs': './node_modules/monaco-editor/min/vs/' } };
+		</script>
+		<script src="./node_modules/monaco-editor/min/vs/loader.js"></script>
+		<script src="./node_modules/monaco-editor/min/vs/editor/editor.main.nls.js"></script>
+		<script src="./node_modules/monaco-editor/min/vs/editor/editor.main.js"></script>
+		<script src="simpleTextCRDT.js"></script>
+		<script src="v2-themes.js"></script>
+		<script src="v2.js"></script>
 	</head>
 	<body>
-		<div id="flexarea">
-			<div id="menubar" tabindex="-1">
-				<div class="menuitem" tabindex="-1">
-					<span class="rootmenu selected" tabindex="-1">File</span>
-					<div id="filemenu" class="hiddenmenu" tabindex="-1">
-						<span id="Open">Open...</span><br />
-						<span id="Save">Save As...</span><br />
-						<span id="Eval">Eval</span><br />
-						<span onclick="window.open(window.location.href,'','resizable'),false;" id="NewWindow">Pop Out<span>
-					</div>
+		<div id="loading" class="loading"><div class="message">Loading...</div></div>
+		<div class="messages" id="messages"></div>
+		<div class="menu" id="mainmenu">
+			<div>
+				<div>File</div>
+				<div>
+					<div id="new">New</div>
+					<div id="open">Open...</div>
+					<div id="save">Save As...</div>
+					<div id="eval">Evaluate</div>
+					<div id="popout">Pop Out</div>
 				</div>
-				<div class="menuitem" tabindex="-1">
-					<span class="rootmenu" tabindex="-1">Language</span>
-					<div id="modemenu" class="hiddenmenu" tabindex="-1"></div>
-				</div>
-				<div class="menuitem" tabindex="-1">
-					<span class="rootmenu" tabindex="-1">Theme</span>
-					<div id="thememenu" class="hiddenmenu" tabindex="-1"></div>
-				</div>
-				<div class="menuitem" tabindex="-1">
-					<span class="rootmenu" tabindex="-1" id="setnick">Set Nickname</span>
-				</div>
-				<input type="text" id="chatmsg" placeholder="Type a chat message here and press enter...">
 			</div>
-			<div id="editor"></div>
+			<div>
+				<div>Language</div>
+				<div id="languages">
+					<div id="azcli">Azure CLI</div>
+					<div id="bat">Batch (Win)</div><br />
+					<div id="c">C</div>
+					<div id="clojure">Clojure</div><br />
+					<div id="coffeescript">CoffeeScript</div>
+					<div id="cpp">C++</div><br />
+					<div id="csharp">C#</div>
+					<div id="css">CSS</div><br />
+					<div id="dockerfile">Dockerfile</div>
+					<div id="fsharp">F#</div><br />
+					<div id="go">Go</div>
+					<div id="html">HTML</div><br />
+					<div id="java">Java</div>
+					<div id="javascript">JavaScript</div><br />
+					<div id="json">JSON</div>
+					<div id="kotlin">Kotlin</div><br />
+					<div id="lua">Lua</div>
+					<div id="markdown">Markdown</div><br />
+					<div id="mysql">MySQL</div>
+					<div id="objective-c">Objective-C</div><br />
+					<div id="perl">Perl</div>
+					<div id="php">PHP</div><br />
+					<div id="pgsql">PostgreSQL</div>
+					<div id="python">Python</div><br />
+					<div id="r">R</div>
+					<div id="ruby">Ruby</div><br />
+					<div id="rust">Rust</div>
+					<div id="shell">Bash Shell</div><br />
+					<div id="sql">SQL</div>
+					<div id="swift">Swift</div><br />
+					<div id="text">Text (Plain)</div>
+					<div id="typescript">TypeScript</div><br />
+					<div id="vb">Visual Basic</div>
+					<div id="xml">XML</div>
+				</div>
+			</div>
+			<div>
+				<div>Theme</div>
+				<div id="themes">
+					<div id="vs">VS Code Light</div>
+					<div id="vs-dark">VS Code Dark</div>
+					<div id="hc-black">High Constrast</div>
+					<div id="codeFingers">codeFingers (incomplete)</div>
+				</div>
+			</div>
+			<div>
+				<div id="nickname">Nickname</div>
+			</div>
+			<input id="chat" type="text" placeholder="Type a chat message here and press enter..." />
 		</div>
-		<div id="chatbox"></div>
+		<div id="statusbar" class="statusbar">&nbsp;</div>
 	</body>
 </html>
