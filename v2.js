@@ -154,7 +154,7 @@ let evalQueue = [];
 
 function remoteEvalConnect () {
 	if (!evalws || evalws.readyState > 1) {
-		evalws = new WebSocket('wss://' + window.location.hostname + ':12345/');
+		evalws = new WebSocket('wss://' + window.location.hostname + '/eval');
 	}
 
 	evalws.onclose = remoteEvalConnect;
