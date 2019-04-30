@@ -1,5 +1,5 @@
 "use strict";
-/* globals monaco simpleTextCRDT WebSocket setTimeout clearTimeout prompt FileReader performance URL Blob themes */
+/* globals monaco simpleTextCRDT WebSocket setTimeout clearTimeout setInterval prompt FileReader performance URL Blob themes */
 
 // edit event: editor.onDidChangeModelContent(e => stuff);
 // offset calc: model.getOffsetAt({ lineNumber: 2, column: 13 });
@@ -425,6 +425,10 @@ class Syncpad {
 			this._showCursor(data.cursor.site, data.cursor.position);
 		}
 
+		if (data.ping) {
+			console.log("Server ping at " + Date.now());
+		}
+
 		this._processChangeQueue();
 
 		if (needsStatusUpdate) {
@@ -450,7 +454,19 @@ class Syncpad {
 			buffer: this.buffer,
 			username: cookies.username,
 		}));
+
+		if (!this.pingInterval) {
+			this.pingInterval = setInterval(this._ping.bind(this), 30000);
+			console.log("Ping interval: " + this.pingInterval);
+		}
+
 		updateStatus();
+	}
+
+	_ping () {
+		if (this.ws && this.ws.readyState === 1) {
+			this.ws.send(JSON.stringify({ping: true}));
+		}
 	}
 
 	_guaranteePeer (site) {

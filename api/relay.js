@@ -1,7 +1,7 @@
 "use strict";
 // The sss extension signals my server to treat this as a module for api interface
 
-/* global module process htmlDocs */
+/* global module process htmlDocs WebSocket */
 let simpleTextCRDT = require(htmlDocs + '/syncpad/simpleTextCRDT.js').simpleTextCRDT;
 let defaultBuffer = new simpleTextCRDT();
 '// type some code!\n'.split('').forEach((v, i) => defaultBuffer.addNode(v, i));
@@ -28,9 +28,13 @@ function sendToRoom (msg, ws, wss) {
 			wss.clients.forEach(client => {
 				if (client !== ws && client.currentbuffer === ws.currentbuffer) {
 					try {
-						client.send(msg);
+						if (client.readyState === WebSocket.OPEN) {
+							client.send(msg);
+						}
 					} catch (err) {
-						ws.send(JSON.stringify({error: err}));
+						if (ws.readyState === WebSocket.OPEN) {
+							ws.send(JSON.stringify({error: err}));
+						}
 					}
 				}
 			});

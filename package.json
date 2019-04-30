@@ -17,6 +17,6 @@
   },
   "homepage": "https://github.com/Nishimura-Katsuo/syncpad#readme",
   "dependencies": {
-    "monaco-editor": "^0.16.0"
+    "monaco-editor": "^0.16.2"
   }
 }
