@@ -1,5 +1,5 @@
 "use strict";
-/* globals monaco simpleTextCRDT WebSocket setTimeout clearTimeout setInterval prompt FileReader performance URL Blob themes */
+/* globals monaco IndexedCRDT WebSocket setTimeout clearTimeout setInterval prompt FileReader performance URL Blob themes */
 
 // edit event: editor.onDidChangeModelContent(e => stuff);
 // offset calc: model.getOffsetAt({ lineNumber: 2, column: 13 });
@@ -300,7 +300,7 @@ class Syncpad {
 			let nodes = [];
 			this.changeQueue.forEach(change => {
 				for (let c = 0; c < change.rangeLength; c++) {
-					nodes.push(this.crdt.deleteNode(change.rangeOffset));
+					nodes.push(this.crdt.delete(change.rangeOffset));
 				}
 
 				if (change.text.indexOf('\r') > -1) {
@@ -308,7 +308,7 @@ class Syncpad {
 				}
 
 				for (let c = 0; c < change.text.length; c++) {
-					nodes.push(this.crdt.addNode(change.text[c], change.rangeOffset + c));
+					nodes.push(this.crdt.insert(change.rangeOffset + c, change.text[c]));
 				}
 			});
 			this.changeQueue = [];
@@ -329,14 +329,16 @@ class Syncpad {
 		}
 
 		if (data.new || !this.crdt) {
-			this.crdt = new simpleTextCRDT(data.site);
-			this.crdt.useTombstones = false;
+			this.ignoreEvents = true;
+			this.crdt = new IndexedCRDT(data.site);
 			this.changeQueue = [];
 			this.setValue('');
 
 			for (let site in this.peers) {
 				this._hideCursor(site);
 			}
+
+			this.ignoreEvents = false;
 		}
 
 		if (data.username) {
@@ -352,29 +354,26 @@ class Syncpad {
 			}
 		}
 
-		if (data.tombstones) {
-			this.crdt.tombstones = data.tombstones;
-		}
-
 		if (data.nodes) {
+			if (typeof data.nodes === "string") {
+				if (data.nodes.charAt(data.nodes.length - 1) === ',') {
+					data.nodes = data.nodes.slice(0, -1);
+				}
+
+				data.nodes = JSON.parse(`[${data.nodes}]`).flat(1);
+			}
+
 			let edits = this.crdt.mergeNodes(data.nodes);
 			this.ignoreEvents = true;
+			let cursor = this.editor.getSelection();
+			let noselect = (cursor.startColumn === cursor.endColumn && cursor.startLineNumber === cursor.endLineNumber);
+			edits.forEach(deltas => {
+				this.editor.executeEdits('', deltas.map(edit => ({range: this.model._getRangeAt(edit[0], edit[1]), text: edit[2].join('')})));
+			});
 
-			if (data.new) {
-				this.setValue(this.crdt.nodes.map(node => node.value).join(''));
-			} else {
-				let cursor = this.editor.getSelection();
-				let noselect = (cursor.startColumn === cursor.endColumn && cursor.startLineNumber === cursor.endLineNumber);
-				edits.forEach(edit => {
-					this.editor.executeEdits('', [{range: this.model._getRangeAt(edit[0], edit[1]), text: edit[2]}]);
-				});
-
-				if (noselect) {
-					cursor = this.editor.getSelection();
-					cursor.selectionStartColumn = cursor.endColumn = cursor.startColumn = cursor.positionColumn;
-					cursor.selectionStartLineNumber = cursor.endLineNumber = cursor.startLineNumber = cursor.positionLineNumber;
-					this.editor.setSelection(cursor);
-				}
+			if (noselect) {
+				cursor = this.editor.getSelection();
+				this.editor.setSelection(new monaco.Selection(cursor.positionLineNumber, cursor.positionColumn, cursor.positionLineNumber, cursor.positionColumn));
 			}
 
 			this.ignoreEvents = false;
@@ -429,6 +428,11 @@ class Syncpad {
 			console.log("Server ping at " + Date.now());
 		}
 
+		if (data.initialize) {
+			this.editor.executeEdits('', [{range: this.model._getRangeAt(0, 0), text: "// type some code!!!\n"}]);
+			this.editor.setSelection(new monaco.Selection(2, 1, 2, 1));
+		}
+
 		this._processChangeQueue();
 
 		if (needsStatusUpdate) {
@@ -442,7 +446,7 @@ class Syncpad {
 			this.ws.close();
 		}
 
-		this.ws = new WebSocket('wss://' + window.location.hostname + '/syncpad/api/relay');
+		this.ws = new WebSocket('wss://' + window.location.hostname + window.location.pathname + 'api/relay');
 		this.ws.onopen = this._connected.bind(this);
 		this.ws.onmessage = this._onMessage.bind(this);
 		this.ws.onclose = this._connect.bind(this);

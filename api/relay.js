@@ -1,12 +1,12 @@
 "use strict";
 // The sss extension signals my server to treat this as a module for api interface
 
-/* global module process htmlDocs WebSocket */
-let simpleTextCRDT = require(htmlDocs + '/syncpad/simpleTextCRDT.js').simpleTextCRDT;
-let defaultBuffer = new simpleTextCRDT();
-'// type some code!\n'.split('').forEach((v, i) => defaultBuffer.addNode(v, i));
+/* global module process WebSocket __dirname */
+const path = require('path');
+const fs = require('fs');
 let charPool = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 let guestNumber = 0, guestprefix = "Guest", site = 1;
+let paddir = path.resolve(__dirname, '../pads');
 
 let randomStr = () => {
 	let c = 12, retstr = "";
@@ -17,8 +17,6 @@ let randomStr = () => {
 
 	return retstr;
 };
-
-let buffer = {};
 
 function sendToRoom (msg, ws, wss) {
 	if (ws.site !== undefined && ws.currentbuffer) {
@@ -57,7 +55,7 @@ module.exports.connect = (ws, wss) => { // websocket connection
 	ws.on('message', data => {
 		try {
 			let input = JSON.parse(data);
-			let output = {}, returnBuffer = false, start = process.hrtime();
+			let output = {}, start = process.hrtime();
 			let broadcast = {};
 
 			if (!ws.site) {
@@ -66,6 +64,7 @@ module.exports.connect = (ws, wss) => { // websocket connection
 			}
 
 			if (input.buffer && input.buffer.length) {
+				input.buffer = input.buffer.replace(/[./]/g, '');
 				sendToRoom({disconnect: ws.site}, ws, wss);
 				ws.currentbuffer = input.buffer;
 				broadcast.connect = ws.site;
@@ -83,27 +82,28 @@ module.exports.connect = (ws, wss) => { // websocket connection
 					output.usernames = usernames;
 				}
 
-				returnBuffer = true;
+				if (fs.existsSync(paddir + '/' + input.buffer)) {
+					output.nodes = fs.readFileSync(paddir + '/' + input.buffer, {encoding: 'utf8'});
+				} else {
+					fs.writeFileSync(paddir + '/' + output.buffer, '');
+					output.initialize = true;
+				}
+
+				output.new = true;
 			} else if (!ws.currentbuffer) {
 				output.buffer = ws.currentbuffer = randomStr();
 
-				while (buffer[ws.currentbuffer] !== undefined) {
+				while (fs.existsSync(paddir + '/' + output.buffer)) {
 					output.buffer = ws.currentbuffer = randomStr();
 				}
 
-				returnBuffer = true;
-			}
-
-			if (buffer[ws.currentbuffer] === undefined) {
-				buffer[ws.currentbuffer] = new simpleTextCRDT();
-				buffer[ws.currentbuffer].useTombstones = false;
-				buffer[ws.currentbuffer].nodes = defaultBuffer.nodes.slice();
-				// fix lamport if we decide to add edits on the server (probably not)
-				returnBuffer = true;
+				fs.writeFileSync(paddir + '/' + output.buffer, '');
+				output.initialize = true;
+				output.new = true;
 			}
 
 			if (input.nodes && input.nodes.length) {
-				buffer[ws.currentbuffer].mergeNodes(input.nodes);
+				fs.writeFileSync(paddir + '/' + ws.currentbuffer, JSON.stringify(input.nodes) + ',', {flag: 'a'});
 				broadcast.nodes = input.nodes;
 			}
 
@@ -135,12 +135,6 @@ module.exports.connect = (ws, wss) => { // websocket connection
 
 			if (input.cursor) {
 				broadcast.cursor = {site: ws.site, position: input.cursor};
-			}
-
-			if (returnBuffer) {
-				output.nodes = buffer[ws.currentbuffer].nodes;
-				output.tombstones = buffer[ws.currentbuffer].tombstones;
-				output.new = true;
 			}
 
 			let diff = process.hrtime(start);
