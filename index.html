@@ -2,83 +2,14 @@
 	<head>
 		<title>Nishi's Syncpad (alpha)</title>
 		<link rel="stylesheet" href="Inconsolata.css">
-		<link rel="stylesheet" data-name="vs/editor/editor.main" href="./node_modules/monaco-editor/dev/vs/editor/editor.main.css">
 		<link rel="stylesheet" href="v2.css">
-		<script>
-			var require = { paths: { 'vs': './node_modules/monaco-editor/dev/vs' } };
-		</script>
-		<script src="./node_modules/monaco-editor/dev/vs/loader.js"></script>
-		<script src="./node_modules/monaco-editor/dev/vs/editor/editor.main.nls.js"></script>
-		<script src="./node_modules/monaco-editor/dev/vs/editor/editor.main.js"></script>
-		<script src="CRDT.js"></script>
-		<script src="v2-themes.js"></script>
-		<script src="v2.js"></script>
+		<script src="v2.js" type="module"></script>
 	</head>
 	<body>
 		<div id="loading" class="loading"><div class="message">Loading...</div></div>
 		<div class="messages" id="messages"></div>
 		<div class="menu" id="mainmenu">
-			<div>
-				<div>File</div>
-				<div>
-					<div id="new">New</div>
-					<div id="open">Open...</div>
-					<div id="save">Save As...</div>
-					<div id="eval">Evaluate</div>
-					<div id="popout">Pop Out</div>
-				</div>
-			</div>
-			<div>
-				<div>Language</div>
-				<div id="languages">
-					<div id="azcli">Azure CLI</div>
-					<div id="bat">Batch (Win)</div><br />
-					<div id="c">C</div>
-					<div id="clojure">Clojure</div><br />
-					<div id="coffeescript">CoffeeScript</div>
-					<div id="cpp">C++</div><br />
-					<div id="csharp">C#</div>
-					<div id="css">CSS</div><br />
-					<div id="dockerfile">Dockerfile</div>
-					<div id="fsharp">F#</div><br />
-					<div id="go">Go</div>
-					<div id="html">HTML</div><br />
-					<div id="java">Java</div>
-					<div id="javascript">JavaScript</div><br />
-					<div id="json">JSON</div>
-					<div id="kotlin">Kotlin</div><br />
-					<div id="lua">Lua</div>
-					<div id="markdown">Markdown</div><br />
-					<div id="mysql">MySQL</div>
-					<div id="objective-c">Objective-C</div><br />
-					<div id="perl">Perl</div>
-					<div id="php">PHP</div><br />
-					<div id="pgsql">PostgreSQL</div>
-					<div id="python">Python</div><br />
-					<div id="r">R</div>
-					<div id="ruby">Ruby</div><br />
-					<div id="rust">Rust</div>
-					<div id="shell">Bash Shell</div><br />
-					<div id="sql">SQL</div>
-					<div id="swift">Swift</div><br />
-					<div id="text">Text (Plain)</div>
-					<div id="typescript">TypeScript</div><br />
-					<div id="vb">Visual Basic</div>
-					<div id="xml">XML</div>
-				</div>
-			</div>
-			<div>
-				<div>Theme</div>
-				<div id="themes">
-					<div id="vs">VS Code Light</div>
-					<div id="vs-dark">VS Code Dark</div>
-					<div id="hc-black">High Constrast</div>
-					<div id="codeFingers">codeFingers (incomplete)</div>
-				</div>
-			</div>
-			<div>
-				<div id="nickname">Nickname</div>
-			</div>
+			<css-top-menu v-for="menu in menus" :menudata="menu" :key="menu.menuKey"></css-top-menu>
 			<input id="chat" type="text" placeholder="Type a chat message here and press enter..." />
 		</div>
 		<div id="statusbar" class="statusbar">&nbsp;</div>

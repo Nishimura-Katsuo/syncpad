@@ -4,6 +4,7 @@
 // much effort to map or join the data into strings
 
 /* global performance */
+/* eslint-sourceType:"module" */
 
 const nIndex = {
 	value: 0,
@@ -198,7 +199,7 @@ class VectorClocks {
 	}
 }
 
-class IndexedCRDT {
+export class IndexedCRDT {
 	constructor (site) {
 		this.nodes = new NodeArray();
 		this.tombstones = new TombstoneArray();
@@ -281,8 +282,4 @@ class IndexedCRDT {
 	}
 }
 
-try { /* global module */
-	module.exports.IndexedCRDT = IndexedCRDT;
-} catch (e) {
-	// do nothing
-}
+export default IndexedCRDT

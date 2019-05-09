@@ -51,11 +51,19 @@ body {
 	border-style: solid;
 	border-width: 1px;
 	z-index: 2;
-	transform: translateY(1px);
+	transform: translateY(-1px);
+	overflow: visible;
+	margin: 1px 0px 0px 0px;
+	padding: 0px;
+	grid-template-columns: auto;
 }
 
 .menu>div>div:nth-child(2)>div {
-	padding: 0px 5px;
+	display: inline;
+	position: static;
+	margin: 0px;
+	padding: 0px 10px;
+	white-space: nowrap;
 }
 
 .menu>div>div:nth-child(2)>div:hover {
@@ -67,12 +75,11 @@ body {
 }
 
 .menu>div:hover>div:nth-child(2) {
-	display: block;
+	display: grid;
 }
 
-#languages>div {
-	display: inline-block;
-	width: 6em;
+#languages>div:nth-child(2) {
+	grid-template-columns: 1fr 1fr;
 }
 
 .menu input {

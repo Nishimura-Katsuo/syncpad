@@ -1,6 +1,6 @@
-'use strict';
+// themes for monaco-editor
 
-let themes = {
+export let custom = {
 	codeFingers: {
 		base: 'vs-dark',
 		inherit: false,
@@ -138,8 +138,11 @@ let themes = {
 	}
 };
 
-try { /* global module */
-	module.exports = themes;
-} catch (err) {
-	// do nothing
-}
+export let themes = [
+	{id: 'vs', name: 'VS Code Light'},
+	{id: 'vs-dark', name: 'VS Code Dark'},
+	{id: 'hc-black', name: 'High Contrast'},
+	{id: 'codeFingers', name: 'codeFingers (incomplete)'},
+];
+
+export default {themes, custom};

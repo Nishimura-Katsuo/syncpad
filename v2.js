@@ -6,66 +6,18 @@
 // position calc: model.getPositionAt(offset);
 // range calc: model._getRangeAt(offseta, offsetb, text);
 
-let $ = document.getElementById.bind(document);
-let foreverDate = 'Thu, 18 Dec 4013 12:00:00 UTC';
+// monaco loaded without 'require' because I was getting duplicate definition warnings
+// see index.html for the load process
 
-let _cookies = {};
-let cookies = new Proxy(_cookies, {
-	get: (obj, prop) => {
-		document.cookie
-			.split(';')
-			.map(cookie => cookie.trim().split('='))
-			.forEach(ck => (obj[ck[0]] = ck[1]));
+let windowLoaded = new Promise(resolve => window.addEventListener('load', resolve)), $ = document.getElementById.bind(document), pad, chatInput, fileInput, fileReader = new FileReader(), fileDownload, hash = window.location.hash.slice(1).split('#');
 
-		return typeof obj[prop] !== 'undefined' ? JSON.parse(obj[prop]) : '';
-	},
-	set: (obj, prop, value) => {
-		if (prop) {
-			document.cookie = prop + '=' + JSON.stringify(value) + ';path=/;expires=' + foreverDate;
-		}
-
-		return true;
-	},
-});
-
-let mainmenu, messages, pad, statusbar, chatInput, fileInput, fileReader = new FileReader(), fileDownload, evalws, hash = window.location.hash.slice(1).split('#');
-
-let fileName = {
-	azcli: '*.azcli',
-	bat: '*.bat',
-	c: '*.c',
-	clojure: '*.clj',
-	coffeescript: '*.coffee',
-	cpp: '*.cpp',
-	csharp: '*.cs',
-	css: '*.css',
-	dockerfile: 'Dockerfile',
-	fsharp: '*.fs',
-	go: '*.go',
-	html: '*.html',
-	java: '*.java',
-	javascript: '*.js',
-	json: '*.json',
-	kotlin: '*.kt',
-	lua: '*.lua',
-	markdown: '*.md',
-	mysql: '*.mysql',
-	'objective-c': '*.m',
-	perl: '*.pl',
-	php: '*.php',
-	pgsql: '*.pgsql',
-	python: '*.py',
-	r: '*.r',
-	ruby: '*.rb',
-	rust: '*.rs',
-	shell: '*.sh',
-	sql: '*.sql',
-	swift: '*.swift',
-	text: '*.txt',
-	typescript: '*.ts',
-	vb: '*.bas',
-	xml: '*.xml',
-};
+import IndexedCRDT from "./CRDT.js";
+import Theme from "./v2-themes.js";
+import monacoLoaded from "./monaco-module.js";
+import vueLoaded from "./vue-module.js";
+import cookies from "./cookies.js";
+import Languages from "./languageSupport.js";
+import Eval from "./remoteEval.js";
 
 function updateHash (newhash = hash) {
 	hash = newhash;
@@ -85,34 +37,30 @@ function updateHash (newhash = hash) {
 function setTheme (theme) {
 	monaco.editor.setTheme(theme);
 	document.body.className = 'cursor-theme-' + theme;
-	mainmenu.className = 'menu menu-theme-' + theme;
-	messages.className = 'messages messages-theme-' + theme;
-	statusbar.className = 'statusbar statusbar-theme-' + theme;
+	$('mainmenu').className = 'menu menu-theme-' + theme;
+	$('messages').className = 'messages messages-theme-' + theme;
+	$('statusbar').className = 'statusbar statusbar-theme-' + theme;
 
-	for (let elem of $('themes').children) {
+	for (let elem of $('themes-options').children) {
 		elem.className = (elem.id === theme ? 'selected' : '');
 	}
 
 	cookies.v2theme = theme;
 }
 
+function themeClick (e) {
+	setTheme(e.target.id);
+}
+
 function setLanguage (lang) {
 	monaco.editor.setModelLanguage(pad.model, lang);
 
-	for (let elem of $('languages').children) {
+	for (let elem of $('languages-options').children) {
 		elem.className = (elem.id === lang ? 'selected' : '');
 	}
 
 	hash[1] = lang;
 	updateHash();
-}
-
-function themeClick (e) {
-	setTheme(e.target.id);
-}
-
-function languageClick (e) {
-	setLanguage(e.target.id);
 }
 
 // let wrapRegEx = /.{1,80}/g;
@@ -139,8 +87,8 @@ function showMessage (msg, color) {
 		}
 	}
 
-	messages.appendChild(elem);
-	messages.appendChild(br);
+	$('messages').appendChild(elem);
+	$('messages').appendChild(br);
 	setTimeout(() => {
 		elem.addEventListener('transitionend', () => {
 			elem.remove();
@@ -150,42 +98,7 @@ function showMessage (msg, color) {
 	}, 10000);
 }
 
-let evalQueue = [];
-
-function remoteEvalConnect () {
-	if (!evalws || evalws.readyState > 1) {
-		evalws = new WebSocket('wss://' + window.location.hostname + '/eval');
-	}
-
-	evalws.onclose = remoteEvalConnect;
-
-	evalws.onmessage = e => {
-		showMessage(e.data);
-	};
-
-	evalws.onopen = () => {
-		evalQueue.forEach(text => evalws.send(text));
-		evalQueue = [];
-	};
-}
-
-function remoteEval () {
-	let text = pad.model.getValue();
-
-	if (!text) {
-		return;
-	}
-
-	remoteEvalConnect();
-
-	text = JSON.stringify({program: hash[1], data: text});
-
-	if (evalws.readyState === 1) {
-		evalws.send(text);
-	} else {
-		evalQueue.push(text);
-	}
-}
+Eval.setMessageFunc(showMessage);
 
 let readyStates = ['Connecting', 'Connected', 'Disconnecting', 'Disconnected'];
 
@@ -204,7 +117,7 @@ function updateStatus () {
 			tmp += ' Users: ' + Object.keys(pad.peers).map(site => pad.peers[site]).filter(peer => peer.connected).map(peer => peer.username).join(', ');
 		}
 
-		statusbar.innerText = tmp;
+		$('statusbar').innerText = tmp;
 	}
 }
 
@@ -214,7 +127,7 @@ class Syncpad {
 		this.ignoreEvents = false;
 		this.element = document.createElement('div');
 		this.element.classList.add('syncpad');
-		document.body.insertBefore(this.element, statusbar);
+		document.body.insertBefore(this.element, $('statusbar'));
 
 		this.editor = monaco.editor.create(this.element, {
 			language: 'text',
@@ -507,7 +420,11 @@ class Syncpad {
 	}
 }
 
-window.addEventListener('load', () => {
+(async function () {
+	await windowLoaded;
+	await monacoLoaded;
+	await vueLoaded;
+
 	if (!cookies.v2theme) {
 		cookies.v2theme = 'vs-dark';
 	}
@@ -519,10 +436,6 @@ window.addEventListener('load', () => {
 	if (!hash[1]) {
 		hash[1] = 'javascript';
 	}
-
-	mainmenu = $('mainmenu');
-	messages = $('messages');
-	statusbar = $('statusbar');
 
 	chatInput = $('chat');
 	fileInput = document.createElement('input');
@@ -552,63 +465,98 @@ window.addEventListener('load', () => {
 		}
 	});
 
-	monaco.editor.defineTheme('codeFingers', themes.codeFingers);
-	monaco.editor.defineTheme('idleFingers', themes.idleFingers);
-
 	pad = new Syncpad(hash[0]);
 	pad.editor.focus();
-	setLanguage(hash[1]);
 
-	setTheme(cookies.v2theme);
-
-	$('new').addEventListener('click', () => window.location.hash = '');
-	$('open').addEventListener('click', () => fileInput.click());
-	$('save').addEventListener('click', () => {
-		fileDownload.download = (fileName[hash[1]] || '*').replace('*', hash[0]);
-		fileDownload.href = URL.createObjectURL(new Blob([pad.model.getValue()], {type: 'application/octet-stream'}));
-		fileDownload.click();
-	});
-	$('eval').addEventListener('click', remoteEval);
-	$('popout').addEventListener('click', () => window.open(window.location.href, '', 'resizable=yes,width=800,height=600'));
-
-	window.addEventListener('keydown', e => {
-		if (e.ctrlKey) {
-			switch (e.keyCode) {
-			case 83: // s
-				e.preventDefault();
-				$('save').click();
-				break;
-			case 79: // o
-				e.preventDefault();
-				$('open').click();
-				break;
-			case 69: // e
-				e.preventDefault();
-				$('eval').click();
-				break;
-			}
-		}
-	});
-
-	for (let elem of $('themes').children) {
-		elem.addEventListener('click', themeClick);
+	for(let ct in Theme.custom) {
+		monaco.editor.defineTheme(ct, Theme.custom[ct]);
 	}
 
-	for (let elem of $('languages').children) {
-		if (elem.id) {
-			elem.addEventListener('click', languageClick);
-		}
-	}
+	new Vue({
+		el: '#mainmenu',
+		created: function () {
+			let menuKey = 0;
 
-	$('nickname').addEventListener('click', () => {
-		let ret = prompt('Enter your username:', cookies.username);
+			Vue.component('css-top-menu', {
+				data: function () {
+					return { menuKey: menuKey++ };
+				},
+				props: ['menudata'],
+				computed: {
+					onClick: function () {
+						return this.menudata && this.menudata.onClick || (() => {});
+					}
+				},
+				template: `<div v-if="menudata.children && menudata.children.length" :id="menudata.id"><div>{{menudata.title || menudata.name}}</div><div :id="menudata.id + '-options'"><css-menu v-for="child in menudata.children" :menudata="child" :key="menudata.menuKey" :parent="menudata"></css-menu></div></div><div v-else :id="menudata.id" @click="onClick"><div>{{menudata.title || menudata.name}}</div></div>`
+			});
 
-		if (ret) {
-			cookies.username = ret;
+			Vue.component('css-menu', {
+				data: function () {
+					return { menuKey: menuKey++ };
+				},
+				props: ['menudata', 'parent'],
+				computed: {
+					onClick: function () {
+						return this.menudata && this.menudata.onClick || this.parent && this.parent.onClick || (() => {});
+					}
+				},
+				template: `<div v-if="menudata.children && menudata.children.length" :id="menudata.id"><div>{{menudata.title || menudata.name}}</div><div :id="menudata.id + '-options'"><css-menu v-for="child in menudata.children" :menudata="child" :key="menudata.menuKey" :parent="menudata"></css-menu></div></div><div v-else :id="menudata.id" @click="onClick">{{menudata.title || menudata.name}}</div>`
+			});
+		},
+		data: {
+			menus: [
+				{id: "file", title: "File", children: [
+					{id: "new", title: "New", onClick: () => window.location.hash = ''},
+					{id: "open", title: "Open", onClick: () => fileInput.click()},
+					{id: "save", title: "Save As...", onClick: () => {
+						fileDownload.download = (Languages[hash[1]].fileName || '*').replace('*', hash[0]);
+						fileDownload.href = URL.createObjectURL(new Blob([pad.model.getValue()], {type: 'application/octet-stream'}));
+						fileDownload.click();
+					}},
+					{id: "eval", title: "Eval", onClick: () => Eval.remoteEval(pad.model.getValue(), hash[1])},
+					{id: "popout", title: "Pop Out", onClick: () => window.open(window.location.href, '', 'resizable=yes,width=800,height=600')},
+				]},
+				{id: "languages", title: "Languages", children: Object.values(Languages), onClick: function (e) {
+					setLanguage(e.target.id);
+				}},
+				{id: "themes", title: "Themes", children: Theme.themes, onClick: function (e) {
+					setTheme(e.target.id);
+				}},
+				{id: "nickname", title: "Nickname", onClick: function () {
+					let ret = prompt('Enter your username:', cookies.username);
 
-			if (pad.ws && pad.ws.readyState === 1) {
-				pad.ws.send(JSON.stringify({username: cookies.username}));
-			}
+					if (ret) {
+						cookies.username = ret;
+
+						if (pad.ws && pad.ws.readyState === 1) {
+							pad.ws.send(JSON.stringify({username: cookies.username}));
+						}
+					}
+				}},
+			],
+		},
+		mounted: function () {
+			setLanguage(hash[1]);
+			setTheme(cookies.v2theme);
+
+			window.addEventListener('keydown', e => {
+				if (e.ctrlKey) {
+					switch (e.keyCode) {
+					case 83: // s
+						e.preventDefault();
+						$('save').click();
+						break;
+					case 79: // o
+						e.preventDefault();
+						$('open').click();
+						break;
+					case 69: // e
+						e.preventDefault();
+						$('eval').click();
+						break;
+					}
+				}
+			});
 		}
 	});
 
@@ -634,4 +582,4 @@ window.addEventListener('load', () => {
 	};
 
 	$('loading').style.display = 'none';
-});
+})();
