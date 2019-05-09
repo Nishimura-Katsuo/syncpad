@@ -1,6 +1,5 @@
-"use strict";
-/* globals monaco IndexedCRDT WebSocket setTimeout clearTimeout setInterval prompt FileReader performance URL Blob themes */
 
+// monaco events etc...
 // edit event: editor.onDidChangeModelContent(e => stuff);
 // offset calc: model.getOffsetAt({ lineNumber: 2, column: 13 });
 // position calc: model.getPositionAt(offset);
@@ -11,13 +10,13 @@
 
 let windowLoaded = new Promise(resolve => window.addEventListener('load', resolve)), $ = document.getElementById.bind(document), pad, chatInput, fileInput, fileReader = new FileReader(), fileDownload, hash = window.location.hash.slice(1).split('#');
 
-import IndexedCRDT from "./CRDT.js";
-import Theme from "./v2-themes.js";
-import monacoLoaded from "./monaco-module.js";
-import vueLoaded from "./vue-module.js";
-import cookies from "./cookies.js";
-import Languages from "./languageSupport.js";
-import Eval from "./remoteEval.js";
+import IndexedCRDT from './CRDT.js';
+import Theme from './v2-themes.js';
+import monacoLoaded from './monaco-module.js'; /* globals monaco */
+import vueLoaded from './vue-module.js'; /* globals Vue */
+import cookies from './cookies.js';
+import Languages from './languageSupport.js';
+import Eval from './remoteEval.js';
 
 function updateHash (newhash = hash) {
 	hash = newhash;
@@ -46,10 +45,6 @@ function setTheme (theme) {
 	}
 
 	cookies.v2theme = theme;
-}
-
-function themeClick (e) {
-	setTheme(e.target.id);
 }
 
 function setLanguage (lang) {
@@ -268,7 +263,7 @@ class Syncpad {
 		}
 
 		if (data.nodes) {
-			if (typeof data.nodes === "string") {
+			if (typeof data.nodes === 'string') {
 				if (data.nodes.charAt(data.nodes.length - 1) === ',') {
 					data.nodes = data.nodes.slice(0, -1);
 				}
@@ -338,11 +333,11 @@ class Syncpad {
 		}
 
 		if (data.ping) {
-			console.log("Server ping at " + Date.now());
+			console.log('Server ping at ' + Date.now());
 		}
 
 		if (data.initialize) {
-			this.editor.executeEdits('', [{range: this.model._getRangeAt(0, 0), text: "// type some code!!!\n"}]);
+			this.editor.executeEdits('', [{range: this.model._getRangeAt(0, 0), text: '// type some code!!!\n'}]);
 			this.editor.setSelection(new monaco.Selection(2, 1, 2, 1));
 		}
 
@@ -374,7 +369,7 @@ class Syncpad {
 
 		if (!this.pingInterval) {
 			this.pingInterval = setInterval(this._ping.bind(this), 30000);
-			console.log("Ping interval: " + this.pingInterval);
+			console.log('Ping interval: ' + this.pingInterval);
 		}
 
 		updateStatus();
@@ -468,7 +463,7 @@ class Syncpad {
 	pad = new Syncpad(hash[0]);
 	pad.editor.focus();
 
-	for(let ct in Theme.custom) {
+	for (let ct in Theme.custom) {
 		monaco.editor.defineTheme(ct, Theme.custom[ct]);
 	}
 
@@ -487,7 +482,7 @@ class Syncpad {
 						return this.menudata && this.menudata.onClick || (() => {});
 					}
 				},
-				template: `<div v-if="menudata.children && menudata.children.length" :id="menudata.id"><div>{{menudata.title || menudata.name}}</div><div :id="menudata.id + '-options'"><css-menu v-for="child in menudata.children" :menudata="child" :key="menudata.menuKey" :parent="menudata"></css-menu></div></div><div v-else :id="menudata.id" @click="onClick"><div>{{menudata.title || menudata.name}}</div></div>`
+				template: '<div v-if="menudata.children && menudata.children.length" :id="menudata.id"><div>{{menudata.title || menudata.name}}</div><div :id="menudata.id + \'-options\'"><css-menu v-for="child in menudata.children" :menudata="child" :key="menudata.menuKey" :parent="menudata"></css-menu></div></div><div v-else :id="menudata.id" @click="onClick"><div>{{menudata.title || menudata.name}}</div></div>'
 			});
 
 			Vue.component('css-menu', {
@@ -500,29 +495,29 @@ class Syncpad {
 						return this.menudata && this.menudata.onClick || this.parent && this.parent.onClick || (() => {});
 					}
 				},
-				template: `<div v-if="menudata.children && menudata.children.length" :id="menudata.id"><div>{{menudata.title || menudata.name}}</div><div :id="menudata.id + '-options'"><css-menu v-for="child in menudata.children" :menudata="child" :key="menudata.menuKey" :parent="menudata"></css-menu></div></div><div v-else :id="menudata.id" @click="onClick">{{menudata.title || menudata.name}}</div>`
+				template: '<div v-if="menudata.children && menudata.children.length" :id="menudata.id"><div>{{menudata.title || menudata.name}}</div><div :id="menudata.id + \'-options\'"><css-menu v-for="child in menudata.children" :menudata="child" :key="menudata.menuKey" :parent="menudata"></css-menu></div></div><div v-else :id="menudata.id" @click="onClick">{{menudata.title || menudata.name}}</div>'
 			});
 		},
 		data: {
 			menus: [
-				{id: "file", title: "File", children: [
-					{id: "new", title: "New", onClick: () => window.location.hash = ''},
-					{id: "open", title: "Open", onClick: () => fileInput.click()},
-					{id: "save", title: "Save As...", onClick: () => {
+				{id: 'file', title: 'File', children: [
+					{id: 'new', title: 'New', onClick: () => window.location.hash = ''},
+					{id: 'open', title: 'Open', onClick: () => fileInput.click()},
+					{id: 'save', title: 'Save As...', onClick: () => {
 						fileDownload.download = (Languages[hash[1]].fileName || '*').replace('*', hash[0]);
 						fileDownload.href = URL.createObjectURL(new Blob([pad.model.getValue()], {type: 'application/octet-stream'}));
 						fileDownload.click();
 					}},
-					{id: "eval", title: "Eval", onClick: () => Eval.remoteEval(pad.model.getValue(), hash[1])},
-					{id: "popout", title: "Pop Out", onClick: () => window.open(window.location.href, '', 'resizable=yes,width=800,height=600')},
+					{id: 'eval', title: 'Eval', onClick: () => Eval.remoteEval(pad.model.getValue(), hash[1])},
+					{id: 'popout', title: 'Pop Out', onClick: () => window.open(window.location.href, '', 'resizable=yes,width=800,height=600')},
 				]},
-				{id: "languages", title: "Languages", children: Object.values(Languages), onClick: function (e) {
+				{id: 'languages', title: 'Languages', children: Object.values(Languages), onClick: function (e) {
 					setLanguage(e.target.id);
 				}},
-				{id: "themes", title: "Themes", children: Theme.themes, onClick: function (e) {
+				{id: 'themes', title: 'Themes', children: Theme.themes, onClick: function (e) {
 					setTheme(e.target.id);
 				}},
-				{id: "nickname", title: "Nickname", onClick: function () {
+				{id: 'nickname', title: 'Nickname', onClick: function () {
 					let ret = prompt('Enter your username:', cookies.username);
 
 					if (ret) {
@@ -553,6 +548,8 @@ class Syncpad {
 					case 69: // e
 						e.preventDefault();
 						$('eval').click();
+						break;
+					default:
 						break;
 					}
 				}
