@@ -1,15 +1,14 @@
-"use strict";
-// The sss extension signals my server to treat this as a module for api interface
+'use strict';
 
 /* global module process WebSocket __dirname */
 const path = require('path');
 const fs = require('fs');
-let charPool = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-let guestNumber = 0, guestprefix = "Guest", site = 1;
+let charPool = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+let guestNumber = 0, guestprefix = 'Guest', site = 1;
 let paddir = path.resolve(__dirname, '../pads');
 
 let randomStr = () => {
-	let c = 12, retstr = "";
+	let c = 12, retstr = '';
 
 	while (c--) {
 		retstr += charPool[(Math.random() * charPool.length) | 0];
