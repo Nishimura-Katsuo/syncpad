@@ -1,4 +1,3 @@
-
 // monaco events etc...
 // edit event: editor.onDidChangeModelContent(e => stuff);
 // offset calc: model.getOffsetAt({ lineNumber: 2, column: 13 });
@@ -17,6 +16,29 @@ import vueLoaded from './vue-module.js'; /* globals Vue */
 import cookies from './cookies.js';
 import Languages from './languageSupport.js';
 import Eval from './remoteEval.js';
+
+function escapeHTML (str) {
+	str = str.replace(/"/g, '&quot;');
+	str = str.replace(/'/g, '&#39;');
+	str = str.replace(/</g, '&lt;');
+	str = str.replace(/>/g, '&gt;');
+
+	let i = str.indexOf('&');
+
+	while (i >= 0) {
+		if (str.slice(i, i + 6) !== '&quot;' && str.slice(i, i + 5) !== '&#39;' && str.slice(i, i + 4) !== '&lt;' && str.slice(i, i + 4) !== '&gt;' && str.slice(i, i + 5) !== '&amp;') {
+			str = str.slice(0, i) + '&amp;' + str.slice(i + 1);
+		}
+
+		i = str.indexOf('&', i + 1);
+	}
+
+	return str;
+}
+
+String.prototype.escapeHTML = function () {
+	return escapeHTML(this);
+};
 
 function updateHash (newhash = hash) {
 	hash = newhash;
@@ -509,6 +531,10 @@ class Syncpad {
 						fileDownload.click();
 					}},
 					{id: 'eval', title: 'Eval', onClick: () => Eval.remoteEval(pad.model.getValue(), hash[1])},
+					{id: 'encode', title: 'Copy (HTML encoded)', onClick: () => {
+						navigator.clipboard.writeText(pad.model.getValue().escapeHTML());
+						showMessage('Code encoded and copied to clipboard!', 'info');
+					}},
 					{id: 'popout', title: 'Pop Out', onClick: () => window.open(window.location.href, '', 'resizable=yes,width=800,height=600')},
 				]},
 				{id: 'languages', title: 'Languages', children: Object.values(Languages), onClick: function (e) {
