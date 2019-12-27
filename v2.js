@@ -532,7 +532,13 @@ class Syncpad {
 					}},
 					{id: 'eval', title: 'Eval', onClick: () => Eval.remoteEval(pad.model.getValue(), hash[1])},
 					{id: 'encode', title: 'Copy (HTML encoded)', onClick: () => {
+						/* global hljs */
 						navigator.clipboard.writeText(pad.model.getValue().escapeHTML());
+						showMessage('Code encoded and copied to clipboard!', 'info');
+					}},
+					{id: 'highlight', title: 'Copy (highlight.js encoded)', onClick: () => {
+						/* global hljs */
+						navigator.clipboard.writeText('<pre>' + hljs.highlight(hash[1], pad.model.getValue(), true).value + '</pre>');
 						showMessage('Code encoded and copied to clipboard!', 'info');
 					}},
 					{id: 'popout', title: 'Pop Out', onClick: () => window.open(window.location.href, '', 'resizable=yes,width=800,height=600')},
